@@ -1,146 +1,222 @@
 
 const SUPABASE_URL = "https://vuknoitixjlrolmprzwo.supabase.co";
-
 const SUPABASE_KEY = "sb_publishable_5duqz0ik84vZw55EP8fp6A_i3Ak3-Wh";
 
-const db = window.supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_KEY
-);
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const $ = (id) => document.getElementById(id);
 
 let currentUser = null;
-let activeChatUser = null;
-let messageChannel = null;
+let currentProfile = null;
+let selectedPerson = null;
+let messageSubscription = null;
 let authMode = "login";
 
-const $ = id => document.getElementById(id);
+function show(id, visible) {
+  const element = $(id);
+  if (element) element.classList.toggle("hidden", !visible);
+}
 
-function show(id, visible = true) {
-  $(id).classList.toggle("hidden", !visible);
+function message(id, text) {
+  if ($(id)) $(id).textContent = text;
 }
 
 function escapeHTML(value) {
-  return String(value ?? "").replace(/[&<>"']/g, c => ({
+  return String(value ?? "").replace(/[&<>"']/g, char => ({
     "&": "&amp;",
     "<": "&lt;",
     ">": "&gt;",
     '"': "&quot;",
-    "'": "&#39;"
-  }[c]));
+    "'": "&#039;"
+  })[char]);
 }
 
-function time(value) {
-  return new Date(value).toLocaleString();
+function openSection(name) {
+  const sections = [
+    "chats",
+    "status",
+    "calls",
+    "communities",
+    "discover",
+    "profile"
+  ];
+
+  sections.forEach(section => {
+    show("section-" + section, section === name);
+  });
+
+  if (name === "chats") loadPeople();
+  if (name === "status") loadStatuses();
+  if (name === "calls") loadCalls();
+  if (name === "communities") loadCommunities();
+  if (name === "discover") loadDiscover();
+  if (name === "profile") loadProfile();
 }
 
-// AUTHENTICATION
+function openApp() {
+  show("auth-view", false);
+  show("main-view", true);
+  show("signout", true);
+
+  message(
+    "welcome",
+    "Welcome to VK CONNECT, " +
+    (currentProfile?.display_name || "Member") + "!"
+  );
+
+  openSection("chats");
+}
+
+function closeApp() {
+  show("main-view", false);
+  show("auth-view", true);
+  show("signout", false);
+}
 
 function setAuthMode(mode) {
   authMode = mode;
 
-  $("login-tab").classList.toggle("active", mode === "login");
-  $("signup-tab").classList.toggle("active", mode === "signup");
-
   show("display-name", mode === "signup");
 
   $("auth-submit").textContent =
-    mode === "login" ? "Sign in" : "Create account";
+    mode === "signup" ? "Create Account" : "Login";
+
+  message("auth-message", "");
 }
 
-$("login-tab").onclick = () => setAuthMode("login");
-$("signup-tab").onclick = () => setAuthMode("signup");
+$("login-tab").addEventListener("click", () => {
+  setAuthMode("login");
+});
 
-$("auth-form").onsubmit = async e => {
-  e.preventDefault();
+$("signup-tab").addEventListener("click", () => {
+  setAuthMode("signup");
+});
 
-  $("auth-message").textContent = "Please wait...";
+// REGISTER AND LOGIN
+$("auth-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
 
   const email = $("email").value.trim();
   const password = $("password").value;
+  const displayName = $("display-name").value.trim();
 
-  let result;
+  message("auth-message", "Please wait...");
 
-  if (authMode === "signup") {
-    result = await db.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          display_name: $("display-name").value.trim()
-        }
+  try {
+    let result;
+
+    if (authMode === "signup") {
+      if (!displayName) {
+        throw new Error("Please enter your display name.");
       }
-    });
 
-    if (!result.error && !result.data.session) {
-      $("auth-message").textContent =
-        "Account created! Check your email to confirm your account.";
-      return;
+      result = await db.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { display_name: displayName }
+        }
+      });
+
+      if (result.error) throw result.error;
+
+      if (result.data.session) {
+        currentUser = result.data.user;
+        await loadProfile();
+        openApp();
+      } else {
+        message(
+          "auth-message",
+          "Account created. Check your email if verification is required."
+        );
+      }
+    } else {
+      result = await db.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (result.error) throw result.error;
+
+      currentUser = result.data.user;
+      await loadProfile();
+      openApp();
     }
-  } else {
-    result = await db.auth.signInWithPassword({
-      email,
-      password
-    });
+  } catch (error) {
+    message("auth-message", error.message);
   }
+});
 
-  if (result.error) {
-    $("auth-message").textContent = result.error.message;
-    return;
-  }
+// LOAD PROFILE
+async function loadProfile() {
+  if (!currentUser) return;
 
-  if (result.data.session) {
-    await loadApp(result.data.session.user);
-  }
-};
-
-// SIGN OUT
-
-$("signout").onclick = async () => {
-  await db.auth.signOut();
-  location.reload();
-};
-
-// LOAD APPLICATION
-
-async function loadApp(user) {
-  currentUser = user;
-
-  show("auth-view", false);
-  show("main-view");
-  show("signout");
-
-  const { data, error } = await db
+  let { data, error } = await db
     .from("profiles")
     .select("*")
-    .eq("id", user.id)
+    .eq("id", currentUser.id)
     .maybeSingle();
 
+  if (error) throw error;
+
+  if (!data) {
+    const result = await db
+      .from("profiles")
+      .insert({
+        id: currentUser.id,
+        display_name:
+          currentUser.user_metadata?.display_name || "VK member"
+      })
+      .select()
+      .single();
+
+    if (result.error) throw result.error;
+    data = result.data;
+  }
+
+  currentProfile = data;
+
+  $("profile-name").value = data.display_name || "";
+  $("profile-bio").value = data.bio || "";
+  $("language").value = data.language || "en";
+}
+
+// SAVE PROFILE
+$("profile-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  if (!currentUser) return;
+
+  const { error } = await db
+    .from("profiles")
+    .update({
+      display_name: $("profile-name").value.trim(),
+      bio: $("profile-bio").value.trim(),
+      language: $("language").value
+    })
+    .eq("id", currentUser.id);
+
   if (error) {
-    alert(error.message);
+    message("profile-message", error.message);
     return;
   }
 
-  $("welcome").textContent =
-    "Welcome, " + (data?.display_name || user.email);
+  await loadProfile();
 
-  $("profile-name").value = data?.display_name || "";
-  $("profile-bio").value = data?.bio || "";
-  $("language").value = data?.language || "en";
+  message("profile-message", "Profile saved successfully!");
+  message(
+    "welcome",
+    "Welcome to VK CONNECT, " + currentProfile.display_name + "!"
+  );
+});
 
-  await Promise.all([
-    loadPeople(),
-    loadStatuses(),
-    loadCommunities(),
-    loadCalls()
-  ]);
-}
-
-// PEOPLE AND DISCOVERY
-
+// LOAD PEOPLE
 async function loadPeople() {
+  if (!currentUser) return;
+
   const { data, error } = await db
     .from("profiles")
-    .select("id,display_name,bio")
+    .select("id, display_name, bio")
     .neq("id", currentUser.id)
     .order("display_name");
 
@@ -153,113 +229,75 @@ async function loadPeople() {
 
   if (!data.length) {
     $("people-list").textContent =
-      "No other members yet. Invite friends to join!";
+      "No other members yet. Invite a friend to join VK CONNECT!";
+    return;
   }
 
   data.forEach(person => {
     const button = document.createElement("button");
-
-    button.innerHTML =
-      `<strong>${escapeHTML(person.display_name)}</strong>
-       <small>${escapeHTML(person.bio)}</small>`;
-
-    button.onclick = () => openChat(person);
-
+    button.textContent = person.display_name || "VK member";
+    button.addEventListener("click", () => selectPerson(person));
     $("people-list").appendChild(button);
   });
-
-  $("discover-list").innerHTML =
-    $("people-list").innerHTML;
-
-  [...$("discover-list").querySelectorAll("button")]
-    .forEach((button, index) => {
-      button.onclick = () => openChat(data[index]);
-    });
 }
 
-async function openChat(person) {
-  activeChatUser = person;
+// LOAD DISCOVER
+async function loadDiscover() {
+  if (!currentUser) return;
 
-  $("chat-title").textContent =
-    person.display_name || "Private chat";
+  const { data, error } = await db
+    .from("profiles")
+    .select("id, display_name, bio")
+    .neq("id", currentUser.id)
+    .order("display_name");
 
-  $("message-input").disabled = false;
-  $("message-form").querySelector("button").disabled = false;
-
-  $("media-file").disabled = false;
-  $("upload-btn").disabled = false;
-
-  await loadMessages();
-
-  if (messageChannel) {
-    await db.removeChannel(messageChannel);
-  }
-
-  messageChannel = db
-    .channel("chat-" + [currentUser.id, person.id].sort().join("-"))
-    .on(
-      "postgres_changes",
-      {
-        event: "INSERT",
-        schema: "public",
-        table: "messages"
-      },
-      payload => {
-        const m = payload.new;
-
-        if (
-          (m.sender_id === currentUser.id &&
-           m.receiver_id === person.id) ||
-          (m.sender_id === person.id &&
-           m.receiver_id === currentUser.id)
-        ) {
-          appendMessage(m);
-        }
-      }
-    )
-    .subscribe();
-}
-
-// MESSAGES
-
-function appendMessage(message) {
-  const box = $("messages");
-
-  if (box.querySelector(".muted")) {
-    box.innerHTML = "";
-  }
-
-  if (box.querySelector(`[data-id="${message.id}"]`)) {
+  if (error) {
+    $("discover-list").textContent = error.message;
     return;
   }
 
-  const div = document.createElement("div");
+  $("discover-list").innerHTML = "";
 
-  div.className =
-    "bubble" +
-    (message.sender_id === currentUser.id ? " mine" : "");
+  if (!data.length) {
+    $("discover-list").textContent = "No members to discover yet.";
+    return;
+  }
 
-  div.dataset.id = message.id;
+  data.forEach(person => {
+    const button = document.createElement("button");
+    button.textContent =
+      (person.display_name || "VK member") +
+      (person.bio ? " — " + person.bio : "");
 
-  const content = message.media_url
-    ? `<a href="${escapeHTML(message.media_url)}" target="_blank">Open media</a>`
-    : escapeHTML(message.body);
+    button.addEventListener("click", () => {
+      openSection("chats");
+      selectPerson(person);
+    });
 
-  div.innerHTML =
-    `${content}<small>${time(message.created_at)}</small>`;
-
-  box.appendChild(div);
-  box.scrollTop = box.scrollHeight;
+    $("discover-list").appendChild(button);
+  });
 }
 
+// SELECT A CHAT
+async function selectPerson(person) {
+  selectedPerson = person;
+
+  $("chat-title").textContent =
+    "Chat with " + (person.display_name || "VK member");
+
+  await loadMessages();
+  subscribeToMessages();
+}
+
+// LOAD MESSAGES
 async function loadMessages() {
-  $("messages").innerHTML = "Loading messages...";
+  if (!selectedPerson || !currentUser) return;
 
   const { data, error } = await db
     .from("messages")
     .select("*")
     .or(
-      `and(sender_id.eq.${currentUser.id},receiver_id.eq.${activeChatUser.id}),and(sender_id.eq.${activeChatUser.id},receiver_id.eq.${currentUser.id})`
+      `and(sender_id.eq.${currentUser.id},receiver_id.eq.${selectedPerson.id}),and(sender_id.eq.${selectedPerson.id},receiver_id.eq.${currentUser.id})`
     )
     .order("created_at");
 
@@ -271,24 +309,45 @@ async function loadMessages() {
   $("messages").innerHTML = "";
 
   if (!data.length) {
-    $("messages").textContent = "Say hello!";
+    $("messages").textContent = "Start your conversation!";
+    return;
   }
 
   data.forEach(appendMessage);
 }
 
-$("message-form").onsubmit = async e => {
-  e.preventDefault();
+function appendMessage(item) {
+  const div = document.createElement("div");
 
-  if (!activeChatUser) return;
+  div.style.padding = "9px";
+  div.style.margin = "7px";
+  div.style.borderRadius = "9px";
+  div.style.background =
+    item.sender_id === currentUser.id ? "#dceaff" : "#eeeeee";
+
+  div.textContent =
+    (item.sender_id === currentUser.id ? "You: " : "Them: ") +
+    (item.body || "Media message");
+
+  $("messages").appendChild(div);
+  $("messages").scrollTop = $("messages").scrollHeight;
+}
+
+// SEND MESSAGE
+$("message-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  if (!selectedPerson) {
+    alert("Select a person first.");
+    return;
+  }
 
   const body = $("message-input").value.trim();
-
   if (!body) return;
 
   const { error } = await db.from("messages").insert({
     sender_id: currentUser.id,
-    receiver_id: activeChatUser.id,
+    receiver_id: selectedPerson.id,
     body
   });
 
@@ -298,23 +357,189 @@ $("message-form").onsubmit = async e => {
   }
 
   $("message-input").value = "";
-};
+  await loadMessages();
+});
+
+// REALTIME MESSAGES
+function subscribeToMessages() {
+  if (messageSubscription) {
+    db.removeChannel(messageSubscription);
+  }
+
+  if (!selectedPerson) return;
+
+  messageSubscription = db
+    .channel("vk-chat-" + currentUser.id)
+    .on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "messages"
+      },
+      payload => {
+        const item = payload.new;
+
+        if (
+          (item.sender_id === currentUser.id &&
+            item.receiver_id === selectedPerson.id) ||
+          (item.sender_id === selectedPerson.id &&
+            item.receiver_id === currentUser.id)
+        ) {
+          loadMessages();
+        }
+      }
+    )
+    .subscribe();
+}
+
+// CREATE STATUS
+$("status-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const body = $("status-input").value.trim();
+  if (!body) return;
+
+  const { error } = await db.from("statuses").insert({
+    user_id: currentUser.id,
+    body
+  });
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  $("status-input").value = "";
+  loadStatuses();
+});
+
+// LOAD STATUSES
+async function loadStatuses() {
+  const { data, error } = await db
+    .from("statuses")
+    .select("*, profiles(display_name)")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    $("status-list").textContent = error.message;
+    return;
+  }
+
+  $("status-list").innerHTML = "";
+
+  if (!data.length) {
+    $("status-list").textContent = "No status updates yet.";
+    return;
+  }
+
+  data.forEach(status => {
+    const div = document.createElement("div");
+    div.textContent =
+      (status.profiles?.display_name || "VK member") +
+      ": " + status.body;
+    $("status-list").appendChild(div);
+  });
+}
+
+// CREATE COMMUNITY
+$("community-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const name = $("community-name").value.trim();
+  if (!name) return;
+
+  const { data, error } = await db
+    .from("communities")
+    .insert({
+      name,
+      created_by: currentUser.id
+    })
+    .select()
+    .single();
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  await db.from("community_members").insert({
+    community_id: data.id,
+    user_id: currentUser.id
+  });
+
+  $("community-name").value = "";
+  loadCommunities();
+});
+
+// LOAD COMMUNITIES
+async function loadCommunities() {
+  const { data, error } = await db
+    .from("communities")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    $("community-list").textContent = error.message;
+    return;
+  }
+
+  $("community-list").innerHTML = "";
+
+  if (!data.length) {
+    $("community-list").textContent = "No communities yet.";
+    return;
+  }
+
+  data.forEach(community => {
+    const div = document.createElement("div");
+    div.textContent = community.name;
+    $("community-list").appendChild(div);
+  });
+}
+
+// CALL HISTORY
+async function loadCalls() {
+  const { data, error } = await db
+    .from("call_events")
+    .select("*")
+    .or(
+      `caller_id.eq.${currentUser.id},callee_id.eq.${currentUser.id}`
+    )
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    $("calls-list").textContent = error.message;
+    return;
+  }
+
+  $("calls-list").innerHTML = "";
+
+  if (!data.length) {
+    $("calls-list").textContent =
+      "No calls yet. Voice and video calling will be added separately.";
+    return;
+  }
+
+  data.forEach(call => {
+    const div = document.createElement("div");
+    div.textContent =
+      call.call_type + " call — " + call.status;
+    $("calls-list").appendChild(div);
+  });
+}
 
 // MEDIA UPLOAD
-
-$("upload-btn").onclick = async () => {
+$("upload-btn").addEventListener("click", async () => {
   const file = $("media-file").files[0];
 
-  if (!file || !activeChatUser) return;
-
-  if (file.size > 20 * 1024 * 1024) {
-    alert("Maximum file size is 20 MB.");
+  if (!file || !selectedPerson) {
+    alert("Choose a file and select a chat first.");
     return;
   }
 
   const path =
-    currentUser.id + "/" + Date.now() + "-" +
-    file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    currentUser.id + "/" + Date.now() + "_" + file.name;
 
   const { error } = await db.storage
     .from("chat-media")
@@ -333,215 +558,70 @@ $("upload-btn").onclick = async () => {
     .from("messages")
     .insert({
       sender_id: currentUser.id,
-      receiver_id: activeChatUser.id,
+      receiver_id: selectedPerson.id,
       body: "",
       media_url: data.publicUrl
     });
 
   if (messageError) {
     alert(messageError.message);
-  } else {
-    $("media-file").value = "";
-  }
-};
-
-// STATUS
-
-$("status-form").onsubmit = async e => {
-  e.preventDefault();
-
-  const body = $("status-input").value.trim();
-
-  if (!body) return;
-
-  const { error } = await db
-    .from("statuses")
-    .insert({
-      user_id: currentUser.id,
-      body
-    });
-
-  if (error) {
-    alert(error.message);
     return;
   }
 
-  $("status-input").value = "";
-  loadStatuses();
-};
-
-async function loadStatuses() {
-  const { data, error } = await db
-    .from("statuses")
-    .select("id,body,created_at,user_id,profiles(display_name)")
-    .order("created_at", { ascending: false })
-    .limit(50);
-
-  if (error) {
-    $("status-list").textContent = error.message;
-    return;
-  }
-
-  $("status-list").innerHTML = data.map(s => `
-    <div class="bubble">
-      <strong>${escapeHTML(s.profiles?.display_name || "VK member")}</strong>
-      <p>${escapeHTML(s.body)}</p>
-      <small>${time(s.created_at)}</small>
-    </div>
-  `).join("");
-}
-
-// COMMUNITIES
-
-$("community-form").onsubmit = async e => {
-  e.preventDefault();
-
-  const name = $("community-name").value.trim();
-
-  if (!name) return;
-
-  const { data, error } = await db
-    .from("communities")
-    .insert({
-      name,
-      created_by: currentUser.id
-    })
-    .select()
-    .single();
-
-  if (error) {
-    alert(error.message);
-    return;
-  }
-
-  const joined = await db
-    .from("community_members")
-    .insert({
-      community_id: data.id,
-      user_id: currentUser.id
-    });
-
-  if (joined.error) {
-    alert(joined.error.message);
-    return;
-  }
-
-  $("community-name").value = "";
-  loadCommunities();
-};
-
-async function loadCommunities() {
-  const { data, error } = await db
-    .from("communities")
-    .select("id,name,created_at,profiles:created_by(display_name)")
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    $("community-list").textContent = error.message;
-    return;
-  }
-
-  $("community-list").innerHTML = data.map(c => `
-    <div class="bubble">
-      <strong>${escapeHTML(c.name)}</strong>
-      <small>Created by ${escapeHTML(c.profiles?.display_name || "VK member")}</small>
-      <button class="join-community" data-id="${c.id}">Join</button>
-    </div>
-  `).join("");
-
-  document.querySelectorAll(".join-community").forEach(button => {
-    button.onclick = async () => {
-      const { error } = await db
-        .from("community_members")
-        .insert({
-          community_id: button.dataset.id,
-          user_id: currentUser.id
-        });
-
-      alert(error ? error.message : "You joined the community!");
-    };
-  });
-}
-
-// CALL HISTORY
-
-async function loadCalls() {
-  const { data, error } = await db
-    .from("call_events")
-    .select("*")
-    .or(
-      `caller_id.eq.${currentUser.id},callee_id.eq.${currentUser.id}`
-    )
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    $("calls-list").textContent = error.message;
-    return;
-  }
-
-  $("calls-list").innerHTML = data.map(c => `
-    <div class="bubble">
-      ${escapeHTML(c.call_type)} call · ${escapeHTML(c.status)}
-      <small>${time(c.created_at)}</small>
-    </div>
-  `).join("");
-}
-
-// PROFILE
-
-$("profile-form").onsubmit = async e => {
-  e.preventDefault();
-
-  const patch = {
-    display_name: $("profile-name").value.trim(),
-    bio: $("profile-bio").value.trim(),
-    language: $("language").value
-  };
-
-  const { error } = await db
-    .from("profiles")
-    .update(patch)
-    .eq("id", currentUser.id);
-
-  $("profile-message").textContent =
-    error ? error.message : "Profile saved successfully!";
-};
-
-// NAVIGATION
-
-document.querySelectorAll(".navigation button")
-.forEach(button => {
-  button.onclick = () => {
-    document.querySelectorAll(".navigation button")
-      .forEach(b => b.classList.toggle("active", b === button));
-
-    [
-      "chats",
-      "status",
-      "calls",
-      "communities",
-      "discover",
-      "profile"
-    ].forEach(section => {
-      show(
-        "section-" + section,
-        section === button.dataset.section
-      );
-    });
-  };
+  alert("Media uploaded successfully!");
+  await loadMessages();
 });
 
-// AUTOMATIC LOGIN RESTORE
+// NAVIGATION
+document.querySelectorAll("[data-section]").forEach(button => {
+  button.addEventListener("click", () => {
+    openSection(button.dataset.section);
+  });
+});
 
-(async () => {
-  const { data, error } = await db.auth.getSession();
-
-  if (error) {
-    console.error(error.message);
-    return;
+// SIGN OUT
+$("signout").addEventListener("click", async () => {
+  if (messageSubscription) {
+    await db.removeChannel(messageSubscription);
+    messageSubscription = null;
   }
 
-  if (data.session) {
-    await loadApp(data.session.user);
+  await db.auth.signOut();
+
+  currentUser = null;
+  currentProfile = null;
+  selectedPerson = null;
+
+  closeApp();
+});
+
+// RESTORE LOGIN SESSION
+async function startApp() {
+  try {
+    const { data, error } = await db.auth.getSession();
+
+    if (error) throw error;
+
+    if (data.session) {
+      currentUser = data.session.user;
+      await loadProfile();
+      openApp();
+    } else {
+      closeApp();
+    }
+  } catch (error) {
+    console.error("VK CONNECT startup error:", error);
+    closeApp();
+    message("auth-message", "App error: " + error.message);
   }
-})();
+}
+
+db.auth.onAuthStateChange((event, session) => {
+  if (event === "SIGNED_OUT") {
+    currentUser = null;
+    closeApp();
+  }
+});
+
+setAuthMode("login");
+startApp();
