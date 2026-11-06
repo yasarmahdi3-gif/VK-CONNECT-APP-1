@@ -5,201 +5,199 @@
   padding: 0;
 }
 
+:root {
+  --blue: #1264e8;
+  --dark-blue: #0847a6;
+  --background: #f1f5fb;
+  --white: #ffffff;
+  --text: #172033;
+  --muted: #778196;
+  --border: #e2e8f0;
+}
+
 body {
   font-family: Arial, sans-serif;
-  background: #f1f5fb;
-  color: #172033;
-}
-
-.topbar {
-  background: #1769ff;
-  color: white;
-  padding: 15px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 20px;
-  font-weight: bold;
-}
-
-.logo {
-  background: white;
-  color: #1769ff;
-  padding: 10px;
-  border-radius: 12px;
-}
-
-main {
-  max-width: 1000px;
-  margin: auto;
-  padding: 15px;
-}
-
-.auth-card {
-  background: white;
-  max-width: 450px;
-  margin: 50px auto;
-  padding: 25px;
-  border-radius: 15px;
-  box-shadow: 0 4px 15px #0001;
-}
-
-.auth-card h1 {
-  margin-bottom: 10px;
-}
-
-.auth-card p {
-  color: #777;
-  margin-bottom: 15px;
-}
-
-.tabs {
-  display: flex;
-  gap: 10px;
-  margin: 20px 0;
-}
-
-button {
-  cursor: pointer;
-  border: none;
-  border-radius: 8px;
-  padding: 12px;
-  background: #1769ff;
-  color: white;
-  font-weight: bold;
-}
-
-button:hover {
-  opacity: .85;
-}
-
-.tabs button {
-  flex: 1;
-  background: #e8efff;
-  color: #1769ff;
-}
-
-input, textarea, select {
-  width: 100%;
-  padding: 13px;
-  margin: 8px 0;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 15px;
-}
-
-form button {
-  width: 100%;
-  margin-top: 8px;
+  background: var(--background);
+  color: var(--text);
+  min-height: 100vh;
 }
 
 .hidden {
   display: none !important;
 }
 
-.welcome {
-  margin: 20px 0;
+.app-header {
+  background: var(--blue);
+  color: white;
+  padding: 17px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 10px #0002;
 }
 
-.welcome p {
-  color: #777;
-  margin-top: 5px;
+.app-header h2 {
+  font-size: 21px;
 }
 
-.navigation {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+button {
+  background: var(--blue);
+  color: white;
+  border: none;
+  padding: 12px 18px;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+button:hover {
+  background: var(--dark-blue);
+}
+
+input,
+textarea,
+select {
+  width: 100%;
+  padding: 13px;
+  margin: 8px 0;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: white;
+  font-size: 15px;
+  outline: none;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--blue);
+}
+
+textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+main {
+  width: 100%;
+  max-width: 1000px;
+  margin: auto;
+  padding: 18px;
+}
+
+#auth-view {
+  max-width: 450px;
+  margin: 55px auto;
+}
+
+.auth-box {
+  background: white;
+  padding: 25px;
+  border-radius: 15px;
+  box-shadow: 0 5px 25px #00000012;
+  text-align: center;
+}
+
+.auth-box h1 {
+  color: var(--blue);
+  margin-bottom: 12px;
+  font-size: 25px;
+}
+
+.auth-box p {
+  color: var(--muted);
+  margin-bottom: 18px;
+}
+
+.auth-tabs {
+  display: flex;
   gap: 10px;
   margin: 20px 0;
 }
 
-.navigation button {
+.auth-tabs button {
+  flex: 1;
+}
+
+#auth-form button {
+  width: 100%;
+  margin-top: 10px;
+}
+
+#main-view > h2 {
+  margin: 15px 0 20px;
+  color: var(--blue);
+}
+
+.main-nav {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 9px;
+  margin-bottom: 22px;
+}
+
+.main-nav button {
+  padding: 14px 5px;
   background: white;
-  color: #1769ff;
-  border: 1px solid #e1e8f4;
-  font-size: 22px;
-  padding: 15px 5px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
+  color: var(--blue);
+  border: 1px solid var(--border);
+  border-radius: 10px;
 }
 
-.navigation button span {
-  font-size: 12px;
-}
-
-.navigation button.active {
-  background: #1769ff;
+.main-nav button:hover {
+  background: var(--blue);
   color: white;
 }
 
-.panel {
+#main-view > section:not(.main-nav) {
   background: white;
   padding: 20px;
-  border-radius: 15px;
+  border-radius: 14px;
+  box-shadow: 0 3px 15px #0000000c;
   margin-bottom: 20px;
-  box-shadow: 0 3px 12px #0001;
 }
 
-.panel h2 {
-  margin-bottom: 15px;
-}
-
-.panel h3 {
-  margin: 15px 0;
+#main-view > section > h2 {
+  color: var(--blue);
+  margin-bottom: 18px;
 }
 
 #people-list,
 #discover-list,
 #status-list,
-#community-list,
-#calls-list {
+#calls-list,
+#community-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
   margin: 12px 0;
 }
 
-#people-list button {
+#people-list button,
+#discover-list button,
+#community-list button {
+  width: 100%;
   text-align: left;
-  background: #edf3ff;
-  color: #1769ff;
+  background: #eef4ff;
+  color: var(--text);
+  border: 1px solid var(--border);
 }
 
 #messages {
-  height: 280px;
+  min-height: 180px;
+  max-height: 400px;
   overflow-y: auto;
-  background: #f5f7fb;
-  padding: 12px;
-  border-radius: 10px;
-  margin: 12px 0;
-}
-
-.bubble {
-  background: #e3ebfa;
-  padding: 10px;
+  background: #f5f8ff;
   border-radius: 12px;
-  margin: 8px 0;
-  max-width: 85%;
-  overflow-wrap: anywhere;
-}
-
-.bubble.mine {
-  background: #1769ff;
-  color: white;
-  margin-left: auto;
+  padding: 14px;
+  margin: 15px 0;
 }
 
 #message-form {
   display: flex;
   gap: 8px;
+  align-items: center;
 }
 
 #message-form input {
@@ -208,32 +206,46 @@ form button {
 }
 
 #message-form button {
-  width: auto;
+  white-space: nowrap;
+}
+
+.media-upload {
+  margin-top: 12px;
+}
+
+#status-list > *,
+#calls-list > *,
+#community-list > * {
+  padding: 13px;
+  border-radius: 9px;
+  background: #f1f5fb;
+}
+
+#profile-form button,
+#status-form button,
+#community-form button {
+  margin-top: 8px;
 }
 
 #auth-message,
 #profile-message {
   margin-top: 12px;
-  color: #1769ff;
-}
-
-footer {
-  text-align: center;
-  color: #888;
-  padding: 20px;
-  font-size: 13px;
 }
 
 @media (max-width: 500px) {
   main {
-    padding: 10px;
+    padding: 12px;
   }
 
-  .panel {
-    padding: 15px;
+  .main-nav {
+    grid-template-columns: repeat(2, 1fr);
   }
 
-  .auth-card {
-    margin: 25px auto;
+  .auth-box {
+    padding: 20px;
+  }
+
+  #main-view > section:not(.main-nav) {
+    padding: 14px;
   }
 }
