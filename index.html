@@ -1,0 +1,131 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1769ff">
+<title>VK CONNECT</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">VK</span>
+    <span>VK CONNECT</span>
+  </div>
+  <button id="signout" class="hidden">Sign out</button>
+</header>
+
+<main>
+
+<section id="auth-view" class="auth-card">
+  <h1>Welcome to VK CONNECT</h1>
+  <p>Connect with everyone, everywhere.</p>
+
+  <div class="tabs">
+    <button id="login-tab">Sign in</button>
+    <button id="signup-tab">Create account</button>
+  </div>
+
+  <form id="auth-form">
+    <input id="email" type="email" placeholder="Email address" required>
+    <input id="password" type="password" placeholder="Password (minimum 6 characters)" minlength="6" required>
+    <input id="display-name" class="hidden" placeholder="Your display name">
+    <button type="submit" id="auth-submit">Sign in</button>
+  </form>
+
+  <p id="auth-message"></p>
+</section>
+
+<section id="main-view" class="hidden">
+
+  <div class="welcome">
+    <h2 id="welcome">Welcome!</h2>
+    <p>Your people. Your conversations.</p>
+  </div>
+
+  <nav class="navigation">
+    <button data-section="chats">💬<span>Chats</span></button>
+    <button data-section="status">◉<span>Status</span></button>
+    <button data-section="calls">☎<span>Calls</span></button>
+    <button data-section="communities">👥<span>Communities</span></button>
+    <button data-section="discover">⌕<span>Discover</span></button>
+    <button data-section="profile">☺<span>Profile</span></button>
+  </nav>
+
+  <section id="section-chats" class="panel">
+    <h2>Messages</h2>
+    <div id="people-list"></div>
+
+    <h3 id="chat-title">Choose someone to chat with</h3>
+    <div id="messages"></div>
+
+    <form id="message-form">
+      <input id="message-input" placeholder="Write a message..." disabled>
+      <button disabled>Send</button>
+    </form>
+
+    <input type="file" id="media-file" accept="image/*,video/*" disabled>
+    <button id="upload-btn" disabled>Upload media</button>
+  </section>
+
+  <section id="section-status" class="panel hidden">
+    <h2>Status updates</h2>
+    <form id="status-form">
+      <input id="status-input" placeholder="What's happening?">
+      <button>Post status</button>
+    </form>
+    <div id="status-list"></div>
+  </section>
+
+  <section id="section-calls" class="panel hidden">
+    <h2>Calls</h2>
+    <div id="calls-list"></div>
+    <p>Audio and video calling will require additional setup.</p>
+  </section>
+
+  <section id="section-communities" class="panel hidden">
+    <h2>Communities</h2>
+    <form id="community-form">
+      <input id="community-name" placeholder="Community name">
+      <button>Create community</button>
+    </form>
+    <div id="community-list"></div>
+  </section>
+
+  <section id="section-discover" class="panel hidden">
+    <h2>Discover people</h2>
+    <div id="discover-list"></div>
+  </section>
+
+  <section id="section-profile" class="panel hidden">
+    <h2>My profile</h2>
+    <form id="profile-form">
+      <input id="profile-name" placeholder="Display name">
+      <textarea id="profile-bio" placeholder="About me"></textarea>
+
+      <select id="language">
+        <option value="en">English</option>
+        <option value="ha">Hausa</option>
+        <option value="ar">Arabic</option>
+        <option value="fr">French</option>
+        <option value="yo">Yoruba</option>
+        <option value="ig">Igbo</option>
+      </select>
+
+      <button>Save profile</button>
+    </form>
+    <p id="profile-message"></p>
+  </section>
+
+</section>
+</main>
+
+<footer>VK CONNECT © 2026 · Free for everyone</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
