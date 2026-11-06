@@ -1,0 +1,239 @@
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background: #f1f5fb;
+  color: #172033;
+}
+
+.topbar {
+  background: #1769ff;
+  color: white;
+  padding: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.logo {
+  background: white;
+  color: #1769ff;
+  padding: 10px;
+  border-radius: 12px;
+}
+
+main {
+  max-width: 1000px;
+  margin: auto;
+  padding: 15px;
+}
+
+.auth-card {
+  background: white;
+  max-width: 450px;
+  margin: 50px auto;
+  padding: 25px;
+  border-radius: 15px;
+  box-shadow: 0 4px 15px #0001;
+}
+
+.auth-card h1 {
+  margin-bottom: 10px;
+}
+
+.auth-card p {
+  color: #777;
+  margin-bottom: 15px;
+}
+
+.tabs {
+  display: flex;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  background: #1769ff;
+  color: white;
+  font-weight: bold;
+}
+
+button:hover {
+  opacity: .85;
+}
+
+.tabs button {
+  flex: 1;
+  background: #e8efff;
+  color: #1769ff;
+}
+
+input, textarea, select {
+  width: 100%;
+  padding: 13px;
+  margin: 8px 0;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 15px;
+}
+
+form button {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.welcome {
+  margin: 20px 0;
+}
+
+.welcome p {
+  color: #777;
+  margin-top: 5px;
+}
+
+.navigation {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.navigation button {
+  background: white;
+  color: #1769ff;
+  border: 1px solid #e1e8f4;
+  font-size: 22px;
+  padding: 15px 5px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.navigation button span {
+  font-size: 12px;
+}
+
+.navigation button.active {
+  background: #1769ff;
+  color: white;
+}
+
+.panel {
+  background: white;
+  padding: 20px;
+  border-radius: 15px;
+  margin-bottom: 20px;
+  box-shadow: 0 3px 12px #0001;
+}
+
+.panel h2 {
+  margin-bottom: 15px;
+}
+
+.panel h3 {
+  margin: 15px 0;
+}
+
+#people-list,
+#discover-list,
+#status-list,
+#community-list,
+#calls-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+#people-list button {
+  text-align: left;
+  background: #edf3ff;
+  color: #1769ff;
+}
+
+#messages {
+  height: 280px;
+  overflow-y: auto;
+  background: #f5f7fb;
+  padding: 12px;
+  border-radius: 10px;
+  margin: 12px 0;
+}
+
+.bubble {
+  background: #e3ebfa;
+  padding: 10px;
+  border-radius: 12px;
+  margin: 8px 0;
+  max-width: 85%;
+  overflow-wrap: anywhere;
+}
+
+.bubble.mine {
+  background: #1769ff;
+  color: white;
+  margin-left: auto;
+}
+
+#message-form {
+  display: flex;
+  gap: 8px;
+}
+
+#message-form input {
+  flex: 1;
+  min-width: 0;
+}
+
+#message-form button {
+  width: auto;
+}
+
+#auth-message,
+#profile-message {
+  margin-top: 12px;
+  color: #1769ff;
+}
+
+footer {
+  text-align: center;
+  color: #888;
+  padding: 20px;
+  font-size: 13px;
+}
+
+@media (max-width: 500px) {
+  main {
+    padding: 10px;
+  }
+
+  .panel {
+    padding: 15px;
+  }
+
+  .auth-card {
+    margin: 25px auto;
+  }
+}
